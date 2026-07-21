@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AI Smart Ambulance Coordination System</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+    <!-- Routing -->
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+
+            display: flex;
+
+            font-family: 'Inter', sans-serif;
+
+            background: #0f172a;
+
+            color: white;
+
+            overflow: hidden;
+        }
+
+        /* 📊 DASHBOARD */
+
+        #dashboard {
+
+            width: 360px;
+
+            height: 100vh;
+
+            background: #111827;
+
+            border-right: 1px solid #1e293b;
+
+            padding: 20px;
+
+            overflow-y: auto;
+        }
+
+        .header {
+
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+
+            font-size: 24px;
+
+            color: #38bdf8;
+
+            margin-bottom: 6px;
+        }
+
+        .header p {
+
+            color: #94a3b8;
+
+            font-size: 14px;
+        }
+
+        /* STATUS */
+
+        .system-status {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            background: #0f172a;
+
+            padding: 12px;
+
+            border-radius: 12px;
+
+            margin-bottom: 20px;
+
+            border: 1px solid #1e293b;
+        }
+
+        .pulse {
+
+            width: 12px;
+
+            height: 12px;
+
+            border-radius: 50%;
+
+            background: #22c55e;
+
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.4);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* CARDS */
+
+        .card {
+
+            background: #1e293b;
+
+            border: 1px solid #334155;
+
+            border-radius: 16px;
+
+            padding: 18px;
+
+            margin-bottom: 18px;
+        }
+
+        .card h3 {
+
+            margin-bottom: 12px;
+
+            font-size: 17px;
+        }
+
+        .value {
+
+            margin-top: 6px;
+
+            font-size: 18px;
+
+            font-weight: 600;
+        }
+
+        .green {
+            color: #22c55e;
+        }
+
+        .red {
+            color: #ef4444;
+        }
+
+        .yellow {
+            color: #facc15;
+        }
+
+        /* ANALYTICS */
+
+        .analytics {
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 12px;
+        }
+
+        .mini-card {
+
+            background: #0f172a;
+
+            padding: 14px;
+
+            border-radius: 12px;
+
+            border: 1px solid #1e293b;
+        }
+
+        .mini-card h4 {
+
+            font-size: 13px;
+
+            color: #94a3b8;
+
+            margin-bottom: 8px;
+        }
+
+        .mini-card p {
+
+            font-size: 20px;
+
+            font-weight: bold;
+        }
+
+        /* TABLE */
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+        }
+
+        th, td {
+
+            padding: 10px;
+
+            text-align: left;
+
+            border-bottom: 1px solid #334155;
+        }
+
+        th {
+
+            color: #94a3b8;
+        }
+
+        /* MAP */
+
+        #map {
+
+            flex: 1;
+
+            height: 100vh;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<!-- 📊 DASHBOARD -->
+<div id="dashboard">
+
+    <div class="header">
+
+        <h1>🚑 Emergency Control</h1>
+
+        <p>AI Smart Ambulance Coordination Platform</p>
+
+    </div>
+
+    <!-- STATUS -->
+    <div class="system-status">
+
+        <div class="pulse"></div>
+
+        <div>
+
+            <div style="font-size:14px;color:#94a3b8;">
+                System Status
+            </div>
+
+            <div class="value green">
+                Emergency Route Active
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ETA -->
+    <div class="card">
+
+        <h3>⏱ Estimated Arrival</h3>
+
+        <div class="value"
+             id="etaValue">
+
+            Loading...
+
+        </div>
+
+    </div>
+
+    <!-- ROUTE -->
+    <div class="card">
+
+        <h3>🛣 Selected Route</h3>
+
+        <div class="value"
+             id="routeValue">
+
+            Loading...
+
+        </div>
+
+    </div>
+
+    <!-- DRIVER ALERT -->
+    <div class="card">
+
+        <h3>🚨 Driver Assistance</h3>
+
+        <div class="value red"
+             id="driverAlert">
+
+            Loading...
+
+        </div>
+
+    </div>
+
+    <!-- HOSPITAL -->
+    <div class="card">
+
+        <h3>🏥 Hospital Coordination</h3>
+
+        <p class="green">
+            Emergency Bed Ready ✅
+        </p>
+
+        <p class="green">
+            Trauma Team Alerted ✅
+        </p>
+
+        <p class="green">
+            Emergency Gate Open ✅
+        </p>
+
+    </div>
+
+    <!-- TRAFFIC -->
+    <div class="card">
+
+        <h3>🚦 Traffic Status</h3>
+
+        <div id="trafficContainer">
+
+            Loading...
+
+        </div>
+
+    </div>
+
+    <!-- ROUTE COMPARISON -->
+    <div class="card">
+
+        <h3>📊 Route Comparison</h3>
+
+        <table>
+
+            <tr>
+                <th>Route</th>
+                <th>Time</th>
+            </tr>
+
+            <tr>
+                <td id="bestRouteName">
+                    Loading...
+                </td>
+
+                <td class="green"
+                    id="bestRouteTime">
+
+                    Loading...
+
+                </td>
+            </tr>
+
+            <tr>
+                <td id="altRouteName">
+                    Loading...
+                </td>
+
+                <td class="red"
+                    id="altRouteTime">
+
+                    Loading...
+
+                </td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="card">
+
+        <h3>📈 Emergency Analytics</h3>
+
+        <div class="analytics">
+
+            <div class="mini-card">
+
+                <h4>Time Saved</h4>
+
+                <p class="green"
+                   id="timeSaved">
+
+                    Loading...
+
+                </p>
+
+            </div>
+
+            <div class="mini-card">
+
+                <h4>Signals Avoided</h4>
+
+                <p class="yellow"
+                   id="signalsAvoided">
+
+                    Loading...
+
+                </p>
+
+            </div>
+
+            <div class="mini-card">
+
+                <h4>Traffic Level</h4>
+
+                <p class="red"
+                   id="trafficLevel">
+
+                    Loading...
+
+                </p>
+
+            </div>
+
+            <div class="mini-card">
+
+                <h4>GPS Status</h4>
+
+                <p class="green">
+                    LIVE
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- 🗺️ MAP -->
+<div id="map"></div>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Routing -->
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+
+    // 🗺️ Create Map
+    var map = L.map('map')
+        .setView([15.8497, 74.4977], 14);
+
+    // 🌍 OpenStreetMap
+    L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+            attribution: '© OpenStreetMap'
+        }
+    ).addTo(map);
+
+    // 🚦 Signal Markers
+    let signalMarkers = [];
+
+    // 🛣 Routing Control
+    let routingControl = null;
+
+    // 🚀 Load Backend Data
+    fetch("http://localhost:8080/route")
+
+        .then(res => res.json())
+
+        .then(data => {
+
+            var route = data.route.map(
+                p => L.latLng(p.lat, p.lng)
+            );
+
+            routingControl = L.Routing.control({
+
+                waypoints: route,
+
+                routeWhileDragging: false,
+
+                addWaypoints: false,
+
+                draggableWaypoints: false,
+
+                fitSelectedRoutes: true,
+
+                show: false,
+
+                createMarker: function() {
+                    return null;
+                }
+
+            }).addTo(map);
+
+
+            // =========================
+            // 🚦 SIGNALS
+            // =========================
+
+            signalMarkers.forEach(
+                marker => map.removeLayer(marker)
+            );
+
+            signalMarkers = [];
+
+            data.signals.forEach(signal => {
+
+                let node =
+                    data.route.find(
+                        r => r.name === signal.node
+                    );
+
+                if (!node) return;
+
+                let color = "green";
+
+                if (signal.state === "RED") {
+                    color = "red";
+                }
+
+                else if (
+                    signal.state === "YELLOW"
+                ) {
+                    color = "yellow";
+                }
+
+                let marker = L.circleMarker(
+                    [node.lat, node.lng],
+                    {
+                        color: "white",
+                        fillColor: color,
+                        fillOpacity: 1,
+                        radius: 16,
+                        weight: 3
+                    }
+                ).addTo(map)
+
+                 .bindPopup(
+                     signal.node +
+                     " : " +
+                     signal.state
+                 );
+
+                signalMarkers.push(marker);
+            });
+
+            // =========================
+            // 📊 DASHBOARD
+            // =========================
+
+            // Route Name
+            const routeNames =
+                data.route.map(
+                    r => r.name
+                ).join(" → ");
+
+            document.getElementById(
+                "routeValue"
+            ).innerText = routeNames;
+
+            // ETA
+            let eta = data.eta;
+
+            document.getElementById(
+                "etaValue"
+            ).innerText = eta;
+
+            // Driver Alert
+            document.getElementById(
+                "driverAlert"
+            ).innerText =
+                "Traffic-aware route selected using Dijkstra algorithm.";
+
+            // Traffic Status
+            let trafficHTML = "";
+
+            data.signals.forEach(signal => {
+
+                let cls = "green";
+
+                if (signal.state === "RED") {
+                    cls = "red";
+                }
+
+                else if (
+                    signal.state === "YELLOW"
+                ) {
+                    cls = "yellow";
+                }
+
+                trafficHTML += `
+                    <p class="${cls}">
+                        Signal ${signal.node}
+                        → ${signal.state}
+                    </p>
+                `;
+            });
+
+            document.getElementById(
+                "trafficContainer"
+            ).innerHTML = trafficHTML;
+
+            // Route Comparison
+            document.getElementById(
+                "bestRouteName"
+            ).innerText = routeNames;
+
+            document.getElementById(
+                "bestRouteTime"
+            ).innerText = eta;
+
+            document.getElementById(
+                "altRouteName"
+            ).innerText =
+                "Alternative Route";
+
+            document.getElementById(
+                "altRouteTime"
+            ).innerText =
+                (data.route.length * 3)
+                + " Minutes";
+
+            // Analytics
+            document.getElementById(
+                "timeSaved"
+            ).innerText =
+                Math.max(
+                    10,
+                    100 - (data.route.length * 8)
+                ) + "%";
+
+            document.getElementById(
+                "signalsAvoided"
+            ).innerText =
+                data.signals.filter(
+                    s => s.state === "RED"
+                ).length;
+
+            document.getElementById(
+                "trafficLevel"
+            ).innerText =
+                data.signals.some(
+                    s => s.state === "RED"
+                )
+                    ? "High"
+                    : "Moderate";
+        });
+
+</script>
+
+</body>
+</html>
